@@ -54,4 +54,34 @@ class ExampleRobolectricTest {
         assertEquals(6, (alarmAction as DeviceAction.SetAlarm).hour)
         assertEquals(30, (alarmAction as DeviceAction.SetAlarm).minute)
     }
+
+    @Test
+    fun `test action parsing for flashlight and battery`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val engine = DeviceActionEngine(context)
+
+        val flashAction = engine.parseActionFromInput("turn on flashlight", null)
+        assertNotNull(flashAction)
+        assertTrue(flashAction is DeviceAction.ToggleFlashlight)
+        assertTrue((flashAction as DeviceAction.ToggleFlashlight).enabled)
+
+        val battAction = engine.parseActionFromInput("check battery percentage", null)
+        assertNotNull(battAction)
+        assertTrue(battAction is DeviceAction.CheckBattery)
+    }
+
+    @Test
+    fun `test action parsing for math and time`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val engine = DeviceActionEngine(context)
+
+        val timeAction = engine.parseActionFromInput("what time is it now", null)
+        assertNotNull(timeAction)
+        assertTrue(timeAction is DeviceAction.GetDeviceTime)
+
+        val mathAction = engine.parseActionFromInput("calculate 25 + 75", null)
+        assertNotNull(mathAction)
+        assertTrue(mathAction is DeviceAction.CalculateMath)
+        assertEquals("100", (mathAction as DeviceAction.CalculateMath).result)
+    }
 }

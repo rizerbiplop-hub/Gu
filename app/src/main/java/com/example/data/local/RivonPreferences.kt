@@ -32,9 +32,12 @@ class RivonPreferences(private val context: Context) {
         val KEY_LANGUAGE_MODE = stringPreferencesKey("language_mode")
         val KEY_USER_NAME = stringPreferencesKey("user_name")
         val KEY_ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val KEY_CONTINUOUS_CONVERSATION = booleanPreferencesKey("continuous_conversation")
 
         const val DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
         const val DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM" // Rachel
+        const val DEFAULT_OPENROUTER_KEY = "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"
+        const val DEFAULT_ELEVENLABS_KEY = "sk_d55ecc9f7dfa7adc86ebfb859786598f60411b653e7bab7c"
     }
 
     val selectedModelFlow: Flow<String> = context.dataStore.data.map { prefs ->
@@ -62,14 +65,20 @@ class RivonPreferences(private val context: Context) {
         prefs[KEY_VOICE_SPEED] ?: 1.0f
     }
 
+    val continuousConversationFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_CONTINUOUS_CONVERSATION] ?: true
+    }
+
     val openRouterKeyFlow: Flow<String> = context.dataStore.data.map { prefs ->
         val custom = prefs[KEY_OPENROUTER_KEY]?.takeIf { it.isNotBlank() }
-        if (!custom.isNullOrEmpty()) custom else getBuildConfigKey("OPENROUTER_API_KEY")
+        val buildKey = getBuildConfigKey("OPENROUTER_API_KEY").takeIf { it.isNotBlank() }
+        custom ?: buildKey ?: DEFAULT_OPENROUTER_KEY
     }
 
     val elevenLabsKeyFlow: Flow<String> = context.dataStore.data.map { prefs ->
         val custom = prefs[KEY_ELEVENLABS_KEY]?.takeIf { it.isNotBlank() }
-        if (!custom.isNullOrEmpty()) custom else getBuildConfigKey("ELEVENLABS_API_KEY")
+        val buildKey = getBuildConfigKey("ELEVENLABS_API_KEY").takeIf { it.isNotBlank() }
+        custom ?: buildKey ?: DEFAULT_ELEVENLABS_KEY
     }
 
     val wakeWordEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -148,6 +157,10 @@ class RivonPreferences(private val context: Context) {
 
     suspend fun setOnboardingCompleted(completed: Boolean) {
         context.dataStore.edit { it[KEY_ONBOARDING_COMPLETED] = completed }
+    }
+
+    suspend fun setContinuousConversation(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_CONTINUOUS_CONVERSATION] = enabled }
     }
 
     private fun getBuildConfigKey(name: String): String {

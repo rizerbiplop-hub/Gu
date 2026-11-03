@@ -141,6 +141,49 @@ sealed class DeviceAction(
         riskLevel = ActionRiskLevel.LOW
     )
 
+    data class ToggleFlashlight(
+        val enabled: Boolean
+    ) : DeviceAction(
+        title = "Flashlight",
+        description = if (enabled) "Turn on flashlight" else "Turn off flashlight",
+        riskLevel = ActionRiskLevel.LOW
+    )
+
+    object CheckBattery : DeviceAction(
+        title = "Battery Telemetry",
+        description = "Check battery percentage and health",
+        riskLevel = ActionRiskLevel.LOW
+    )
+
+    object GetDeviceTime : DeviceAction(
+        title = "Date & Time",
+        description = "Query current system time and date",
+        riskLevel = ActionRiskLevel.LOW
+    )
+
+    data class CalculateMath(
+        val expression: String,
+        val result: String
+    ) : DeviceAction(
+        title = "Calculation",
+        description = "$expression = $result",
+        riskLevel = ActionRiskLevel.LOW
+    )
+
+    data class ToggleMute(
+        val mute: Boolean
+    ) : DeviceAction(
+        title = "Ringer Mode",
+        description = if (mute) "Mute device audio" else "Unmute device audio",
+        riskLevel = ActionRiskLevel.MEDIUM
+    )
+
+    object TakeSelfie : DeviceAction(
+        title = "Take Selfie",
+        description = "Open front camera for photo",
+        riskLevel = ActionRiskLevel.LOW
+    )
+
     data class AccessibilityInteract(
         val actionDescription: String,
         val targetText: String? = null,

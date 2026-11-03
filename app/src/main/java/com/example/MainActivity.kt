@@ -30,6 +30,7 @@ import com.example.ui.screens.MainAssistantScreen
 import com.example.ui.screens.MemorySettingsScreen
 import com.example.ui.screens.PermissionManagerScreen
 import com.example.ui.screens.PersonalitySettingsScreen
+import com.example.ui.screens.VoiceConversationScreen
 import com.example.ui.screens.WakeWordSettingsScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.RivonDeepBlack
@@ -87,6 +88,7 @@ fun RivonAppContent(viewModel: RivonViewModel) {
     ) { screen ->
         when (screen) {
             ScreenDestination.MAIN -> MainAssistantScreen(viewModel = viewModel)
+            ScreenDestination.VOICE_IMMERSIVE -> VoiceConversationScreen(viewModel = viewModel)
             ScreenDestination.CHAT -> ChatConversationScreen(viewModel = viewModel)
             ScreenDestination.AI_MODELS -> AiModelSelectionScreen(viewModel = viewModel)
             ScreenDestination.ELEVENLABS_VOICES -> ElevenLabsVoiceScreen(viewModel = viewModel)
@@ -97,7 +99,6 @@ fun RivonAppContent(viewModel: RivonViewModel) {
             ScreenDestination.MEMORY -> MemorySettingsScreen(viewModel = viewModel)
             ScreenDestination.API_CONFIG -> ApiConfigScreen(viewModel = viewModel)
             ScreenDestination.ABOUT -> AboutRivonScreen(viewModel = viewModel)
-            else -> MainAssistantScreen(viewModel = viewModel)
         }
     }
 }

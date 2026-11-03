@@ -171,6 +171,12 @@ fun MainAssistantScreen(viewModel: RivonViewModel) {
 
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     IconButton(
+                        onClick = { viewModel.navigateTo(ScreenDestination.VOICE_IMMERSIVE) },
+                        modifier = Modifier.testTag("nav_voice_immersive")
+                    ) {
+                        Icon(Icons.Default.RecordVoiceOver, contentDescription = "Voice Mode", tint = RivonCyan)
+                    }
+                    IconButton(
                         onClick = { viewModel.navigateTo(ScreenDestination.APP_MANAGER) },
                         modifier = Modifier.testTag("nav_app_manager")
                     ) {
@@ -191,6 +197,8 @@ fun MainAssistantScreen(viewModel: RivonViewModel) {
                 }
             }
 
+            val continuousMode by viewModel.continuousConversationMode.collectAsState()
+
             // Status badges row
             Row(
                 modifier = Modifier
@@ -200,6 +208,12 @@ fun MainAssistantScreen(viewModel: RivonViewModel) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 RivonStatusBadge(
+                    label = if (continuousMode) "Speech-to-Speech: AUTO" else "Speech-to-Speech: MANUAL",
+                    icon = Icons.Default.RecordVoiceOver,
+                    color = if (continuousMode) RivonNeonGreen else RivonTextMuted,
+                    onClick = { viewModel.toggleContinuousConversation() }
+                )
+                RivonStatusBadge(
                     label = selectedModel.split("/").lastOrNull()?.replace(":free", " (Free)") ?: "OpenRouter",
                     icon = Icons.Default.Psychology,
                     color = RivonCyan,
@@ -207,7 +221,7 @@ fun MainAssistantScreen(viewModel: RivonViewModel) {
                 )
                 RivonStatusBadge(
                     label = if (voiceEngineType.name == "ELEVENLABS") "ElevenLabs Voice" else "Android TTS",
-                    icon = Icons.Default.RecordVoiceOver,
+                    icon = Icons.Default.VolumeUp,
                     color = RivonElectricBlue,
                     onClick = { viewModel.navigateTo(ScreenDestination.ELEVENLABS_VOICES) }
                 )
@@ -364,10 +378,15 @@ fun MainAssistantScreen(viewModel: RivonViewModel) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 val quickActions = listOf(
+                    "Turn on flashlight",
+                    "Check battery percentage",
+                    "What time is it?",
+                    "Take a selfie",
                     "Open Instagram",
                     "Open YouTube and search relaxing music",
                     "Message Rahul on WhatsApp",
                     "Play Top Hits on Spotify",
+                    "Calculate 25 percent of 480",
                     "Set volume to 50 percent",
                     "Set alarm for 6 AM",
                     "Open Camera",

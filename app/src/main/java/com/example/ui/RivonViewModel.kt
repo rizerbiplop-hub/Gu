@@ -131,6 +131,16 @@ class RivonViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope, SharingStarted.WhileSubscribed(5000), "Commander"
     )
 
+    val continuousConversationMode = preferences.continuousConversationFlow.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), true
+    )
+
+    fun toggleContinuousConversation() {
+        viewModelScope.launch {
+            preferences.setContinuousConversation(!continuousConversationMode.value)
+        }
+    }
+
     // Saved memory facts
     val savedFacts = memoryDao.getAllFacts().stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
@@ -256,6 +266,16 @@ class RivonViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         _orbState.value = RivonOrbState.THINKING
+
+        // Conversational voice standby commands
+        val lower = text.lowercase()
+        if (lower in listOf("stop", "bye", "goodbye", "sleep", "stop listening", "that's all", "dismiss", "stand down", "exit")) {
+            val exitMsg = "Standing by, ${userName.value}."
+            val msg = ChatMessage(sender = MessageSender.RIVON, text = exitMsg)
+            _messages.value = _messages.value + msg
+            speakResponse(exitMsg, isFinalExit = true)
+            return
+        }
 
         // Check for local instant action matching first (e.g. "open instagram", "set volume to 50%")
         val instantAction = actionEngine.parseActionFromInput(text, null)
@@ -401,7 +421,7 @@ class RivonViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun speakResponse(text: String) {
+    private fun speakResponse(text: String, isFinalExit: Boolean = false) {
         _orbState.value = RivonOrbState.SPEAKING
         voiceEngine.speak(
             text = text,
@@ -411,6 +431,17 @@ class RivonViewModel(application: Application) : AndroidViewModel(application) {
             speed = voiceSpeed.value,
             onComplete = {
                 _orbState.value = RivonOrbState.IDLE
+                if (!isFinalExit && continuousConversationMode.value &&
+                    (_currentScreen.value == ScreenDestination.MAIN || _currentScreen.value == ScreenDestination.VOICE_IMMERSIVE)
+                ) {
+                    viewModelScope.launch {
+                        kotlinx.coroutines.delay(350)
+                        if (!voiceEngine.isListening.value && !voiceEngine.isSpeaking.value) {
+                            _orbState.value = RivonOrbState.LISTENING
+                            voiceEngine.startListening()
+                        }
+                    }
+                }
             }
         )
     }

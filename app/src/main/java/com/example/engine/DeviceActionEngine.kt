@@ -5,10 +5,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.hardware.camera2.CameraManager
 import android.media.AudioManager
 import android.net.Uri
+import android.os.BatteryManager
 import android.os.Build
 import android.provider.AlarmClock
+import android.provider.ContactsContract
 import android.provider.MediaStore
 import android.provider.Settings
 import com.example.model.ActionRiskLevel
@@ -17,6 +20,8 @@ import com.example.model.InstalledApp
 import com.example.model.SettingType
 import com.example.service.RivonAccessibilityService
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 class DeviceActionEngine(private val context: Context) {
@@ -173,6 +178,52 @@ class DeviceActionEngine(private val context: Context) {
             return DeviceAction.SetTimer(seconds = minutes * 60)
         }
 
+        // Flashlight / Torch
+        if (text.contains("flashlight") || text.contains("torch") || text.contains("batti")) {
+            val isOff = text.contains("off") || text.contains("niba") || text.contains("banda")
+            return DeviceAction.ToggleFlashlight(enabled = !isOff)
+        }
+
+        // Battery Telemetry
+        if (text.contains("battery") || text.contains("charge") || text.contains("katti cha")) {
+            return DeviceAction.CheckBattery
+        }
+
+        // Time and Date
+        if (text.contains("what time") || text.contains("current time") || text.contains("what is the date") || text.contains("samaya katti") || text.contains("time now")) {
+            return DeviceAction.GetDeviceTime
+        }
+
+        // Selfie / Front Camera
+        if (text.contains("selfie") || text.contains("front camera")) {
+            return DeviceAction.TakeSelfie
+        }
+
+        // Ringer Mute / Unmute
+        if (text.contains("silent mode") || text.contains("mute phone") || text.contains("unmute")) {
+            val isMute = !text.contains("unmute")
+            return DeviceAction.ToggleMute(mute = isMute)
+        }
+
+        // Quick Math Calculation (e.g. "calculate 25 + 75", "what is 50 * 4")
+        val mathPattern = Regex("(?:calculate|what is|how much is)\\s+(\\d+(?:\\.\\d+)?)\\s*([+\\-*/x%])\\s*(\\d+(?:\\.\\d+)?)")
+        val mathMatch = mathPattern.find(text)
+        if (mathMatch != null) {
+            val n1 = mathMatch.groupValues[1].toDoubleOrNull() ?: 0.0
+            val op = mathMatch.groupValues[2]
+            val n2 = mathMatch.groupValues[3].toDoubleOrNull() ?: 0.0
+            val res = when (op) {
+                "+" -> n1 + n2
+                "-" -> n1 - n2
+                "*", "x" -> n1 * n2
+                "/" -> if (n2 != 0.0) n1 / n2 else Double.NaN
+                "%" -> n1 * (n2 / 100.0)
+                else -> n1 + n2
+            }
+            val formatted = if (res % 1.0 == 0.0) res.toLong().toString() else "%.2f".format(res)
+            return DeviceAction.CalculateMath("${mathMatch.groupValues[1]} $op ${mathMatch.groupValues[3]}", formatted)
+        }
+
         // Settings
         if (text.contains("wifi") || text.contains("wi-fi")) {
             return DeviceAction.OpenSettings(SettingType.WIFI)
@@ -263,6 +314,19 @@ class DeviceActionEngine(private val context: Context) {
                 "NavigateMaps" -> DeviceAction.NavigateMaps(
                     destination = params.optString("destination", "Home")
                 )
+                "ToggleFlashlight" -> DeviceAction.ToggleFlashlight(
+                    enabled = params.optBoolean("enabled", true)
+                )
+                "CheckBattery" -> DeviceAction.CheckBattery
+                "GetDeviceTime" -> DeviceAction.GetDeviceTime
+                "CalculateMath" -> DeviceAction.CalculateMath(
+                    expression = params.optString("expression", ""),
+                    result = params.optString("result", "")
+                )
+                "ToggleMute" -> DeviceAction.ToggleMute(
+                    mute = params.optBoolean("mute", true)
+                )
+                "TakeSelfie" -> DeviceAction.TakeSelfie
                 else -> null
             }
         } catch (e: Exception) {
@@ -287,10 +351,104 @@ class DeviceActionEngine(private val context: Context) {
                 is DeviceAction.ComposeEmail -> executeComposeEmail(action)
                 is DeviceAction.NavigateMaps -> executeNavigateMaps(action)
                 is DeviceAction.ShareContent -> executeShareContent(action)
+                is DeviceAction.ToggleFlashlight -> executeToggleFlashlight(action)
+                is DeviceAction.CheckBattery -> executeCheckBattery()
+                is DeviceAction.GetDeviceTime -> executeGetDeviceTime()
+                is DeviceAction.CalculateMath -> executeCalculateMath(action)
+                is DeviceAction.ToggleMute -> executeToggleMute(action)
+                is DeviceAction.TakeSelfie -> executeTakeSelfie()
                 is DeviceAction.AccessibilityInteract -> executeAccessibilityInteract(action)
             }
         } catch (e: Exception) {
             ExecutionResult(false, "Failed to execute ${action.title}: ${e.message}")
+        }
+    }
+
+    private fun executeToggleFlashlight(action: DeviceAction.ToggleFlashlight): ExecutionResult {
+        return try {
+            val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+            val cameraId = cameraManager.cameraIdList.firstOrNull()
+            if (cameraId != null) {
+                cameraManager.setTorchMode(cameraId, action.enabled)
+                val msg = if (action.enabled) "Flashlight turned on." else "Flashlight turned off."
+                ExecutionResult(true, msg)
+            } else {
+                ExecutionResult(false, "Flashlight not supported on this device.")
+            }
+        } catch (e: Exception) {
+            ExecutionResult(false, "Could not control flashlight: ${e.message}")
+        }
+    }
+
+    private fun executeCheckBattery(): ExecutionResult {
+        return try {
+            val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+            val level = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+            val isCharging = batteryManager.isCharging
+            val status = if (isCharging) "and currently charging." else "not charging."
+            ExecutionResult(true, "Your battery is at $level%, $status")
+        } catch (e: Exception) {
+            ExecutionResult(false, "Unable to read battery status.")
+        }
+    }
+
+    private fun executeGetDeviceTime(): ExecutionResult {
+        val now = Date()
+        val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
+        val dateFormat = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault())
+        val msg = "It is ${timeFormat.format(now)} on ${dateFormat.format(now)}."
+        return ExecutionResult(true, msg)
+    }
+
+    private fun executeCalculateMath(action: DeviceAction.CalculateMath): ExecutionResult {
+        return ExecutionResult(true, "${action.expression} equals ${action.result}")
+    }
+
+    private fun executeToggleMute(action: DeviceAction.ToggleMute): ExecutionResult {
+        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        return try {
+            audioManager.ringerMode = if (action.mute) {
+                AudioManager.RINGER_MODE_SILENT
+            } else {
+                AudioManager.RINGER_MODE_NORMAL
+            }
+            ExecutionResult(true, if (action.mute) "Device muted." else "Device unmuted.")
+        } catch (e: Exception) {
+            ExecutionResult(false, "Could not change ringer mode: ${e.message}")
+        }
+    }
+
+    private fun executeTakeSelfie(): ExecutionResult {
+        val intent = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA).apply {
+            putExtra("android.intent.extras.CAMERA_FACING", 1)
+            putExtra("android.intent.extra.USE_FRONT_CAMERA", true)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        return try {
+            context.startActivity(intent)
+            ExecutionResult(true, "Opening front camera for selfie.", "Camera")
+        } catch (e: Exception) {
+            executeOpenCamera(DeviceAction.OpenCamera(false))
+        }
+    }
+
+    fun lookupPhoneNumber(name: String): String? {
+        return try {
+            val cursor = context.contentResolver.query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME),
+                "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} LIKE ?",
+                arrayOf("%$name%"),
+                null
+            )
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val numberIndex = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                    if (numberIndex >= 0) it.getString(numberIndex) else null
+                } else null
+            }
+        } catch (e: Exception) {
+            null
         }
     }
 
@@ -322,7 +480,13 @@ class DeviceActionEngine(private val context: Context) {
     }
 
     private fun executeWhatsApp(action: DeviceAction.WhatsAppMessage): ExecutionResult {
-        val phoneParam = action.phoneNumber?.replace("+", "")?.replace(" ", "") ?: ""
+        var phoneParam = action.phoneNumber?.replace("+", "")?.replace(" ", "") ?: ""
+        if (phoneParam.isBlank()) {
+            val lookedUp = lookupPhoneNumber(action.contactName)
+            if (!lookedUp.isNullOrBlank()) {
+                phoneParam = lookedUp.replace("+", "").replace(" ", "").replace("-", "")
+            }
+        }
         val encodedMsg = Uri.encode(action.messageText)
 
         // Try direct WhatsApp URL scheme
