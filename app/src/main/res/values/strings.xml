@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">RIVON</string>
+    <string name="accessibility_service_description">RIVON Assistant uses accessibility to help interact with on-screen apps upon your explicit voice commands (e.g. typing prepared messages, navigating supported buttons). Only active when requested.</string>
+    <string name="wake_word_channel_name">RIVON Wake Word Service</string>
+    <string name="wake_word_channel_desc">Active listening notification for Hey Rivon</string>
+</resources>

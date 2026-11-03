@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer energy ring -->
+    <path
+        android:strokeColor="#1E88E5"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M 54,26 A 28,28 0 1,1 53.9,26" />
+
+    <!-- Cyan segmented rings -->
+    <path
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M 33,38 A 26,26 0 0,1 75,38" />
+    <path
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M 75,70 A 26,26 0 0,1 33,70" />
+
+    <!-- Inner neural nodes and arcs -->
+    <path
+        android:strokeColor="#80D8FF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M 40,54 A 14,14 0 1,0 68,54 A 14,14 0 1,0 40,54" />
+
+    <!-- Core glowing nexus -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M 54,46 L 62,54 L 54,62 L 46,54 Z" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 54,50 L 58,54 L 54,58 L 50,54 Z" />
+
+    <!-- Pulse nodes -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M 54,23 A 3,3 0 1,1 53.9,23 Z" />
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M 54,85 A 3,3 0 1,1 53.9,85 Z" />
+    <path
+        android:fillColor="#2979FF"
+        android:pathData="M 23,54 A 3,3 0 1,1 22.9,54 Z" />
+    <path
+        android:fillColor="#2979FF"
+        android:pathData="M 85,54 A 3,3 0 1,1 84.9,54 Z" />
+</vector>
